@@ -18,25 +18,29 @@ app = FastAPI(
 )
 
 # Allow the local frontend (or any dev frontend) to call the API
+app = FastAPI(
+    title="Smart Resume Screener API",
+    description="Parses resumes, matches them to a job description with an LLM, and ranks candidates.",
+    version="1.0.0",
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://resumescreenermart.netlify.app",
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-        "http://127.0.0.1:3000",
-        "http://localhost:3000",
-    ],
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+@app.get("/cors-test")
+def cors_test():
+    return {"cors": "working"}
+
+
 @app.get("/")
 def root():
     return {"status": "ok", "service": "smart-resume-screener"}
-
 
 # ---------- Jobs ----------
 
