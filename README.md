@@ -6,6 +6,44 @@ An AI-powered resume screening web application that analyzes resumes against a j
 
 https://resumescreenersmart.netlify.app/
 
+## 🧪 Example Screening
+
+### Job Role
+
+**Title:** Backend Developer Intern
+
+**Job Description:**
+
+> We are looking for a Backend Developer Intern to build and maintain REST APIs using Python and FastAPI. The candidate should have knowledge of SQL databases, API development, Git, and basic problem-solving skills. Experience with cloud deployment and backend projects is a plus.
+
+### Sample Candidate
+
+A candidate with experience in:
+
+- Python
+- FastAPI
+- REST APIs
+- SQL
+- Git
+- Backend development
+- Cloud deployment
+
+### Example Result
+
+The system analyzes the candidate's resume against the job description and generates:
+
+```text
+Candidate: Sample Candidate
+
+Match Score: 9/10
+
+Justification:
+The candidate has strong experience with Python, FastAPI,
+REST APIs, SQL, and Git, which closely match the requirements
+of the Backend Developer Intern role. Their backend development
+experience and exposure to cloud deployment further strengthen
+their suitability for the position.
+
 ## 📌 Overview
 
 Smart Resume Screener helps recruiters quickly evaluate multiple resumes against a specific job role.
