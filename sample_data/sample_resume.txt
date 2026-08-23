@@ -1,0 +1,24 @@
+Priya Nair
+priya.nair@email.com | Bengaluru, India
+
+SUMMARY
+Backend engineer with 4 years of experience building REST APIs and data
+pipelines in Python. Comfortable owning services from design to deployment.
+
+SKILLS
+Python, FastAPI, Flask, PostgreSQL, Docker, AWS (EC2, S3, Lambda), Redis,
+Git, CI/CD (GitHub Actions), REST API design, SQLAlchemy
+
+EXPERIENCE
+Backend Engineer, Fintech Startup — 2022 to Present
+- Built and maintained REST APIs serving 200k+ daily requests using FastAPI
+- Migrated legacy Flask services to FastAPI, cutting response times by 35%
+- Set up CI/CD pipelines with GitHub Actions and Docker for automated deploys
+- Integrated a third-party LLM API to auto-categorize support tickets
+
+Software Engineer, Retail Tech Co — 2020 to 2022
+- Developed internal inventory management APIs using Django REST Framework
+- Wrote and optimized complex PostgreSQL queries for reporting dashboards
+
+EDUCATION
+B.Tech in Computer Science, VIT Vellore — 2020

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Resume Screener</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <span class="brand">Smart<em>Screen</em></span>
+    <span class="brand-sub">resume &rarr; role matching, powered by AI</span>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- LEFT: job intake -->
+  <section class="panel intake" aria-label="Job setup">
+    <div class="panel-head">
+      <span class="eyebrow">01 — Set the role</span>
+      <h2>Job description</h2>
+    </div>
+
+    <div id="job-form">
+      <label class="field">
+        <span>Role title</span>
+        <input type="text" id="job-title" placeholder="e.g. Senior Backend Engineer">
+      </label>
+      <label class="field">
+        <span>Description &amp; requirements</span>
+        <textarea id="job-description" rows="10" placeholder="Paste the job description here..."></textarea>
+      </label>
+      <button type="button" id="create-job-btn" class="btn primary">Create role</button>
+      <p class="hint" id="job-hint"></p>
+    </div>
+
+    <div id="active-job" class="active-job hidden">
+      <span class="eyebrow">Active role</span>
+      <h3 id="active-job-title"></h3>
+      <button id="change-job-btn" class="btn ghost small">Switch role</button>
+    </div>
+
+    <div class="panel-head upload-head">
+      <span class="eyebrow">02 — Add resumes</span>
+      <h2>Upload candidates</h2>
+    </div>
+    <div id="dropzone" class="dropzone">
+      <p><strong>Drop resumes here</strong> or click to choose files</p>
+      <p class="dropzone-sub">PDF, DOCX or TXT — each one is parsed and scored automatically</p>
+      <input type="file" id="file-input" accept=".pdf,.docx,.txt" multiple hidden>
+    </div>
+    <ul id="upload-log" class="upload-log"></ul>
+  </section>
+
+  <!-- RIGHT: ranked candidates -->
+  <section class="panel results" aria-label="Ranked candidates">
+    <div class="panel-head">
+      <span class="eyebrow">03 — Shortlist</span>
+      <h2>Ranked candidates</h2>
+      <button id="refresh-btn" class="btn ghost small">Refresh</button>
+    </div>
+
+    <div id="empty-state" class="empty-state">
+      <p>No candidates yet.</p>
+      <p class="dropzone-sub">Create a role and upload a resume to see match scores here.</p>
+    </div>
+
+    <div id="candidate-list" class="candidate-list"></div>
+  </section>
+
+</main>
+
+<div id="detail-modal" class="modal hidden">
+  <div class="modal-card">
+    <button id="modal-close" class="modal-close" aria-label="Close">&times;</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
