@@ -1,32 +1,35 @@
 # Smart Resume Screener
 
 Parses resumes (PDF/DOCX/TXT), extracts structured candidate data, and uses
-Claude to score each resume against a job description (1-10) with a
-justification — then ranks candidates in a dashboard.
+an LLM (via OpenRouter) to score each resume against a job description
+(1-10) with a justification — then ranks candidates in a dashboard.
 
 ## Architecture
 
 ```
 ┌─────────────────┐      REST (JSON)       ┌──────────────────────┐
-│  Frontend        │ ─────────────────────▶ │  FastAPI backend      │
-│  (HTML/CSS/JS)    │ ◀───────────────────── │  backend/app/main.py  │
+│  Frontend         │ ─────────────────────▶ │  FastAPI backend      │
+│  (HTML/CSS/JS)     │ ◀───────────────────── │  backend/app/main.py  │
 └─────────────────┘                         └──────────┬────────────┘
                                                          │
                                     ┌────────────────────┼────────────────────┐
                                     ▼                    ▼                    ▼
                           resume_parser.py        llm_service.py        models.py
-                          (PDF/DOCX/TXT → text)   (Claude API call)   (SQLAlchemy ORM)
+                          (PDF/DOCX/TXT → text)   (OpenRouter API call) (SQLAlchemy ORM)
                                                          │                    │
                                                          ▼                    ▼
-                                              Anthropic Claude API      SQLite database
+                                                  OpenRouter API         SQLite database
+                                              (routes to chosen model)
 ```
 
 **Flow for one resume:**
 1. User creates a `Job` (title + description) via the dashboard.
 2. User uploads a resume file → backend extracts raw text (`resume_parser.py`).
-3. Backend sends `{resume_text, job_description}` to Claude in a single call
-   (`llm_service.py`) which returns structured JSON: extracted skills /
-   experience / education, a 1-10 match score, and a justification.
+3. Backend sends `{resume_text, job_description}` to the LLM via OpenRouter
+   in a single call (`llm_service.py`), which returns structured JSON:
+   extracted skills / experience / education, a 1-10 match score, and a
+   justification. If the first attempt doesn't return clean JSON, one retry
+   is made with a stricter prompt.
 4. Result is stored in SQLite (`resumes` table) and shown ranked, highest
    score first, in the dashboard.
 
@@ -34,23 +37,25 @@ justification — then ranks candidates in a dashboard.
 
 - **Backend:** Python, FastAPI, SQLAlchemy, SQLite
 - **Resume parsing:** `pdfplumber` (PDF), `python-docx` (DOCX), plain read (TXT)
-- **LLM:** Anthropic Claude API (`anthropic` Python SDK)
+- **LLM:** OpenRouter (OpenAI-compatible API, routes to your chosen model)
 - **Frontend:** plain HTML/CSS/JS dashboard (no build step required)
 
-## Getting an Anthropic API key (what you need to provide)
+## Getting an OpenRouter API key (what you need to provide)
 
-1. Go to **https://console.anthropic.com** and sign in / create an account.
-2. Open **Settings → API Keys** and click **Create Key**. Copy it — you
-   won't be able to see it again.
-3. Add billing/credits under **Settings → Billing** (a small amount, a few
-   dollars, is enough to run this whole project many times over).
+1. Go to **https://openrouter.ai** and sign in / create an account.
+2. Open **https://openrouter.ai/keys** and click **Create Key**. Copy it —
+   you won't be able to see it again.
+3. Free-tier models (like the default below) don't require billing setup.
+   If you want a paid model for better reliability, add credits under
+   **Settings → Credits**.
 4. You only need to give **me** (or paste into your own `.env` file)
    two things:
-   - `ANTHROPIC_API_KEY` — the key from step 2
-   - Optionally, which model to use (`ANTHROPIC_MODEL`) — defaults to
-     `claude-sonnet-5`, a solid quality/cost balance. Use
-     `claude-haiku-4-5-20251001` for a cheaper/faster option on large
-     batches of resumes.
+   - `OPENROUTER_API_KEY` — the key from step 2
+   - Optionally, which model to use (`OPENROUTER_MODEL`) — defaults to
+     `openai/gpt-oss-20b:free`. Free models are heavily rate-limited and
+     less consistent at structured JSON output than paid ones. If you hit
+     repeated LLM analysis failures, try a paid model instead, e.g.
+     `openai/gpt-4o-mini` or `anthropic/claude-sonnet-5`.
 
 Never commit your real key to GitHub — `.env` is already in `.gitignore`,
 and `.env.example` is the template that ships with the repo.
@@ -66,7 +71,7 @@ source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 cp .env.example .env
-# edit .env and paste your ANTHROPIC_API_KEY
+# edit .env and paste your OPENROUTER_API_KEY
 
 uvicorn app.main:app --reload --port 8000
 ```
@@ -109,15 +114,20 @@ are included so you can test end-to-end in under a minute:
 
 ## LLM prompt design
 
-The core prompt lives in `backend/app/llm_service.py`. It does extraction
-and scoring in **one call** per resume to keep token usage and latency low.
+The core logic lives in `backend/app/llm_service.py`. It does extraction
+and scoring in **one call** per resume to keep token usage and latency low,
+with **one automatic retry** using a stricter prompt if the first response
+isn't clean JSON — free-tier reasoning models occasionally emit a
+"thinking" fragment before their real answer, so the retry (and the
+brace-depth JSON parser that survives that fragment) exist specifically to
+handle that.
 
-**System prompt (summarized):** instructs Claude to act as a technical
-recruiter, extract `candidate_name`, `skills`, `experience`, `education`
-from the resume text, then score fit 1-10 against the job description with
-a justification citing specific evidence — and to respond with **only**
-raw JSON in a fixed schema, so the backend can parse it reliably without
-regex-hacking free text.
+**System prompt (summarized):** instructs the model to act as a resume
+screening system, extract `candidate_name`, `skills`, `experience`,
+`education` from the resume text, then score fit 1-10 against the job
+description with a justification citing specific evidence — and to
+respond with **only** a single complete JSON object in a fixed schema, no
+markdown, no reasoning text, no explanations before or after it.
 
 **User prompt (from the original brief, made concrete):**
 > "Compare the following resume with this job description and rate fit on
@@ -125,28 +135,43 @@ regex-hacking free text.
 
 This is expanded to also request the structured extraction fields, and
 both the job description and resume text are interpolated directly into
-the prompt (resume text truncated to ~12k characters to keep prompts
-bounded for very long resumes).
+the prompt (resume text truncated to ~8k characters, job description to
+~5k, to keep prompts bounded for very long inputs).
 
 **Why one combined call instead of two:** extraction and scoring both need
 to read the full resume text, so combining them halves the number of LLM
 calls (and cost) versus a separate "extract" then "score" step, with no
-loss of quality since Claude reasons over both in the same context.
+loss of quality since the model reasons over both in the same context.
+
+**Why no `response_format` JSON mode:** OpenRouter's `response_format`
+(JSON mode) isn't supported by every routed model — an unsupported value
+fails the request outright before the prompt-level JSON instructions get a
+chance to work. The prompts are explicit enough about the required shape
+that plain text generation + robust parsing is more portable across models.
 
 ## Notes on evaluation criteria (from the original brief)
 
 - **Code quality & structure:** backend is split into `resume_parser.py`
-  (file → text), `llm_service.py` (LLM prompt + call), `models.py`/`schemas.py`
-  (data layer), and `main.py` (routes) — each with a single responsibility.
+  (file → text), `llm_service.py` (LLM prompt + call + parsing), `models.py`
+  /`schemas.py` (data layer), and `main.py` (routes) — each with a single
+  responsibility.
 - **Data extraction:** handled per-format in `resume_parser.py`, with clear
   errors for unsupported files or unreadable (e.g. scanned-image) PDFs.
 - **LLM prompt quality:** system + user prompts are in `llm_service.py`,
-  documented above, constrained to a strict JSON schema with defensive
-  fallback parsing (`_extract_json`) in case the model wraps output in
-  markdown fences.
+  documented above, constrained to a strict JSON schema with a
+  brace-depth-aware parser (`_find_json_objects` / `_extract_json`) that
+  tolerates markdown fences and stray reasoning text, plus a one-shot retry
+  with a stricter prompt if the first attempt fails.
 - **Output clarity:** the dashboard ranks candidates by score, shows a
   short justification inline, and a full detail view (skills / experience
   / education) on click.
+
+## Debugging LLM issues
+
+Set `LLM_DEBUG=1` in your `.env` to log full prompts and raw model
+responses to the console. Leave it off (`0`, the default) in any shared or
+production environment — resumes and job descriptions can contain personal
+information and this will print them in full.
 
 ## Suggested demo video outline (2-3 min)
 
@@ -165,3 +190,5 @@ loss of quality since Claude reasons over both in the same context.
 - Swap SQLite for Postgres for multi-user/production use
 - Add a background job queue (e.g. Celery) if resume volume gets large,
   so uploads return immediately and scoring happens asynchronously
+- Switch to a paid OpenRouter model (or a direct provider API) if free-tier
+  rate limits or JSON-reliability become a problem in real usage
