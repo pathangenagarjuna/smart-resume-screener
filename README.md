@@ -1,5 +1,107 @@
 # Smart Resume Screener
 
+An AI-powered resume screening web application that analyzes resumes against a job description, extracts candidate information, and generates a match score with justification.
+
+## 🚀 Live Demo
+
+https://resumescreenersmart.netlify.app/
+
+## 📌 Overview
+
+Smart Resume Screener helps recruiters quickly evaluate multiple resumes against a specific job role.
+
+The application allows users to:
+
+- Create a job role with a title and description
+- Upload candidate resumes in PDF, DOCX, or TXT format
+- Extract text from uploaded resumes
+- Analyze resumes using an LLM
+- Extract candidate details such as:
+  - Candidate name
+  - Skills
+  - Experience
+  - Education
+- Calculate a resume-to-job match score
+- Generate an AI-based justification for the score
+- Rank candidates based on their match score
+- View shortlisted candidates through a simple dashboard
+
+## ✨ Features
+
+### Job Management
+- Create a new job role
+- Store job title and description
+- Restore the active job after refreshing the page
+
+### Resume Upload
+- Upload resumes using file selection
+- Drag-and-drop resume upload
+- Supports PDF, DOCX, and TXT files
+- Multiple resumes can be uploaded
+
+### AI Resume Analysis
+The application uses an LLM to analyze each resume and provide:
+
+- Candidate name
+- Skills
+- Experience
+- Education
+- Match score
+- Justification
+
+### Candidate Ranking
+Candidates are automatically sorted based on their match score, making it easier to identify the most suitable candidates.
+
+## 🛠️ Tech Stack
+
+### Frontend
+- HTML5
+- CSS3
+- JavaScript
+- Netlify
+
+### Backend
+- Python
+- FastAPI
+- Uvicorn
+- SQLAlchemy
+
+### Database
+- SQLite
+
+### AI
+- OpenRouter API
+- Large Language Model (LLM)
+
+### Deployment
+- Frontend: Netlify
+- Backend: Render
+
+## 🏗️ Project Structure
+
+```text
+smart-resume-screener/
+│
+├── frontend/
+│   ├── index.html
+│   ├── style.css
+│   └── app.js
+│
+├── backend/
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── database.py
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── resume_parser.py
+│   │   └── llm_service.py
+│   │
+│   └── requirements.txt
+│
+└── README.md
+
+# Smart Resume Screener
+
 Parses resumes (PDF/DOCX/TXT), extracts structured candidate data, and uses
 an LLM (via OpenRouter) to score each resume against a job description
 (1-10) with a justification — then ranks candidates in a dashboard.
