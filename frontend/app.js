@@ -5,7 +5,7 @@ window.addEventListener("beforeunload", () => {
 });
 
 
-const API_BASE = "https://smart-resume-screener-dc12.onrender.com";
+const API_BASE = "https://smart-resume-screener-dcl2.onrender.com";
 
 
 let activeJobId = localStorage.getItem("activeJobId");
